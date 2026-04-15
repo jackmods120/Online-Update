@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>داشبۆرد | جاک ئەپدەیت</title>
+  <title>جاک ئەپدەیت | دروستکەری لینکی Raw</title>
   <style>
     body { font-family: system-ui, sans-serif; background: #000; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 16px; }
     .panel { background: #1C1C1E; padding: 24px; border-radius: 14px; width: 100%; max-width: 500px; }
@@ -11,89 +11,60 @@
     label { color: #8E8E93; font-size: 14px; display: block; margin-bottom: 4px; }
     input, textarea { width: 100%; padding: 12px; margin-bottom: 16px; background: #2C2C2E; border: none; border-radius: 8px; color: #fff; }
     button { width: 100%; padding: 14px; background: #0A84FF; color: #fff; border: none; border-radius: 10px; font-size: 17px; font-weight: bold; cursor: pointer; margin-top: 16px; }
-    .logout { background: #3A3A3C; margin-top: 8px; }
     .status { text-align: center; margin-top: 16px; }
+    .raw-link { background: #2C2C2E; padding: 12px; border-radius: 8px; color: #0A84FF; word-break: break-all; margin-top: 16px; }
     hr { border-color: #3A3A3C; margin: 20px 0; }
   </style>
-  <!-- Firebase SDK -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
-    import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+</head>
+<body>
+  <div class="panel">
+    <h2>🔗 دروستکەری لینکی نوێکردنەوە</h2>
+    <p style="color: #8E8E93; text-align: center;">فۆڕمەکە پڕ بکەرەوە بۆ وەرگرتنی لینکی Raw</p>
 
-    // 📌 ڕێکخستنی نوێکراوی Firebase
-    const firebaseConfig = {
-      apiKey: "AIzaSyC0_fw0HIADvNIiDQyy6lsY7XsIABk0se8",
-      authDomain: "dialog-jack.firebaseapp.com",
-      databaseURL: "https://dialog-jack-default-rtdb.firebaseio.com",
-      projectId: "dialog-jack",
-      storageBucket: "dialog-jack.firebasestorage.app",
-      messagingSenderId: "127556343331",
-      appId: "1:127556343331:web:308985974ac23e52924396",
-      measurementId: "G-N8TQGS80TY"
-    };
+    <!-- بەشی ناسنامە -->
+    <label>🆔 ناسنامەی تایبەت (ID)</label>
+    <input type="text" id="updateId" placeholder="JACK_MOD" value="JACK_MOD" required>
+    
+    <!-- بەشی ڕێکخستنەکان -->
+    <label>📱 ناونیشان</label>
+    <input type="text" id="title" value="📢 وەشانی نوێ بەردەستە">
+    <label>📝 پەیام</label>
+    <textarea id="message">وەشانی نوێ بەردەستە. تکایە ئەپەکەت نوێ بکەرەوە.</textarea>
+    <label>🔗 لینکی دابەزاندن</label>
+    <input type="url" id="updateUrl" value="https://t.me/j4ck_721">
+    <label>📌 دوایین وەشان</label>
+    <input type="text" id="latestVersion" value="9.1.20">
+    <label>🔘 دەقی دوگمە</label>
+    <input type="text" id="updateButtonText" value="نوێکردنەوە">
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getDatabase(app);
+    <button onclick="generateRawLink()">🚀 دروستکردنی لینکی Raw</button>
+    
+    <div id="result" style="display: none;">
+      <hr>
+      <h3>✅ لینکی Raw دروست بوو</h3>
+      <div class="raw-link" id="rawLinkDisplay"></div>
+      <button onclick="copyRawLink()">📋 کۆپیکردنی لینک</button>
+      <p style="color: #8E8E93; font-size: 13px; margin-top: 8px;">ئەم لینکە لە JackUpdateDialog.java دایبنێ</p>
+    </div>
 
-    let currentUser = null;
+    <div id="status" class="status"></div>
+  </div>
 
-    onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        window.location.href = '/index.html';
-      } else {
-        currentUser = user;
-        document.getElementById('userEmail').textContent = user.email;
-        loadUserConfig();
-      }
-    });
+  <script>
+    // 📌 ئەم نهێنییە تایبەتە بە خۆت و لە Vercel Environment Variable دادەنرێت
+    const ADMIN_SECRET = 'YOUR_SECRET_PASSWORD'; // دەبێت هەمان ئەو نرخە بێت کە لە Vercel دادەنێیت
 
-    window.logout = function() {
-      signOut(auth).then(() => window.location.href = '/index.html');
-    };
-
-    async function loadUserConfig() {
-      const dbRef = ref(db, `users/${currentUser.uid}/config`);
-      const snapshot = await get(dbRef);
-      if (snapshot.exists()) {
-        const data = snapshot.val();
-        document.getElementById('dbUrl').value = data.dbUrl || '';
-        document.getElementById('dbSecret').value = data.dbSecret || '';
-      }
-    }
-
-    window.saveDatabaseConfig = async function() {
-      const dbUrl = document.getElementById('dbUrl').value.trim();
-      const dbSecret = document.getElementById('dbSecret').value.trim();
-      const status = document.getElementById('configStatus');
+    window.generateRawLink = async function() {
+      const id = document.getElementById('updateId').value.trim();
+      const statusDiv = document.getElementById('status');
+      const resultDiv = document.getElementById('result');
       
-      if (!dbUrl || !dbSecret) {
-        status.textContent = '❌ تکایە هەردوو خانە پڕ بکەرەوە';
+      if (!id) {
+        statusDiv.textContent = '❌ تکایە ناسنامە بنووسە';
         return;
       }
 
-      try {
-        await set(ref(db, `users/${currentUser.uid}/config`), { dbUrl, dbSecret });
-        status.textContent = '✅ زانیارییەکان پاشەکەوت کران';
-        status.style.color = '#34C759';
-      } catch (e) {
-        status.textContent = '❌ هەڵە: ' + e.message;
-        status.style.color = '#FF3B30';
-      }
-    };
-
-    window.sendUpdate = async function() {
-      const dbUrl = document.getElementById('dbUrl').value.trim();
-      const dbSecret = document.getElementById('dbSecret').value.trim();
-      const status = document.getElementById('updateStatus');
-      
-      if (!dbUrl || !dbSecret) {
-        status.textContent = '❌ سەرەتا زانیارییەکانی بنکەدراوە تۆمار بکە';
-        return;
-      }
-
-      const data = {
+      const config = {
         title: document.getElementById('title').value,
         message: document.getElementById('message').value,
         update_url: document.getElementById('updateUrl').value,
@@ -103,55 +74,41 @@
         force_update: false
       };
 
-      status.textContent = '⏳ چاوەڕێ بکە...';
-      const cleanDbUrl = dbUrl.replace(/\/$/, '');
-      const fullUrl = `${cleanDbUrl}/update_config.json?auth=${dbSecret}`;
-
+      statusDiv.textContent = '⏳ چاوەڕێ بکە...';
+      
       try {
-        const res = await fetch(fullUrl, { method: 'PUT', body: JSON.stringify(data), headers: { 'Content-Type': 'application/json' } });
-        if (res.ok) {
-          status.textContent = '✅ بە سەرکەوتوویی پاشەکەوت کرا!';
-          status.style.color = '#34C759';
+        const response = await fetch('/api/update', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${ADMIN_SECRET}`
+          },
+          body: JSON.stringify({ id, config })
+        });
+
+        const data = await response.json();
+        
+        if (response.ok) {
+          statusDiv.textContent = '✅ لینکی Raw بە سەرکەوتوویی دروست بوو!';
+          statusDiv.style.color = '#34C759';
+          document.getElementById('rawLinkDisplay').textContent = data.rawUrl;
+          resultDiv.style.display = 'block';
         } else {
-          status.textContent = '❌ هەڵە: ' + res.status;
-          status.style.color = '#FF3B30';
+          statusDiv.textContent = '❌ هەڵە: ' + (data.error || response.status);
+          statusDiv.style.color = '#FF3B30';
         }
-      } catch (e) {
-        status.textContent = '❌ هەڵەی تۆڕ: ' + e.message;
-        status.style.color = '#FF3B30';
+      } catch (error) {
+        statusDiv.textContent = '❌ هەڵەی تۆڕ: ' + error.message;
+        statusDiv.style.color = '#FF3B30';
       }
     };
+
+    window.copyRawLink = function() {
+      const link = document.getElementById('rawLinkDisplay').textContent;
+      navigator.clipboard.writeText(link).then(() => {
+        alert('✅ لینک کۆپی کرا!');
+      });
+    };
   </script>
-</head>
-<body>
-  <div class="panel">
-    <h2>📱 داشبۆردی جاک ئەپدەیت</h2>
-    <p style="color: #8E8E93;">بەخێربێیت، <span id="userEmail"></span></p>
-    <button class="logout" onclick="logout()">🚪 چوونەدەرەوە</button>
-
-    <hr>
-    <h3>⚙️ ڕێکخستنی بنکەدراوەکەت</h3>
-    <label>🔗 لینکی بنکەدراوە (Database URL)</label>
-    <input type="url" id="dbUrl" placeholder="https://YOUR-PROJECT.firebaseio.com">
-    <label>🔐 نهێنی بنکەدراوە (Database Secret)</label>
-    <input type="password" id="dbSecret" placeholder="وشەی نهێنی...">
-    <button onclick="saveDatabaseConfig()">💾 پاشەکەوتکردنی ڕێکخستنەکان</button>
-    <div id="configStatus" class="status" style="color: #8E8E93;"></div>
-
-    <hr>
-    <h3>📢 ناردنی نوێکردنەوە</h3>
-    <label>📱 ناونیشان</label>
-    <input type="text" id="title" value="📢 وەشانی نوێ بەردەستە">
-    <label>📝 پەیام</label>
-    <textarea id="message">وەشانی نوێ بەردەستە. تکایە ئەپەکەت نوێ بکەرەوە.</textarea>
-    <label>🔗 لینکی دابەزاندن</label>
-    <input type="url" id="updateUrl" value="https://t.me/">
-    <label>📌 دوایین وەشان</label>
-    <input type="text" id="latestVersion" value="1.0.1">
-    <label>🔘 دەقی دوگمە</label>
-    <input type="text" id="updateButtonText" value="نوێکردنەوە">
-    <button onclick="sendUpdate()">🚀 ناردنی نوێکردنەوە</button>
-    <div id="updateStatus" class="status"></div>
-  </div>
 </body>
 </html>
