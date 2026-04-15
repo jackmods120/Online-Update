@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ckb" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>جاک ئەپدەیت | پانێڵی بەڕێوەبەر</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 16px;
+    }
+    .panel {
+      background: #1C1C1E;
+      padding: 24px;
+      border-radius: 14px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+    }
+    h2 { color: #fff; text-align: center; margin-bottom: 24px; }
+    label { color: #8E8E93; font-size: 14px; display: block; margin-bottom: 4px; }
+    input, textarea {
+      width: 100%;
+      padding: 12px;
+      margin-bottom: 16px;
+      background: #2C2C2E;
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    textarea { min-height: 80px; resize: vertical; }
+    button {
+      width: 100%;
+      padding: 14px;
+      background: #0A84FF;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      font-size: 17px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+    button:hover { background: #007AFF; }
+    .status { text-align: center; margin-top: 16px; color: #8E8E93; }
+  </style>
+</head>
+<body>
+  <div class="panel">
+    <h2>⚡ نوێکردنەوەی ئەپ</h2>
+    <form id="updateForm">
+      <label>📱 ناونیشان</label>
+      <input type="text" id="title" placeholder="📢 Update Available" value="📢 وەشانی نوێ بەردەستە">
+      
+      <label>📝 پەیام</label>
+      <textarea id="message" placeholder="تکایە ئەپەکەت نوێ بکەرەوە...">وەشانی نوێ بەردەستە. تکایە ئەپەکەت نوێ بکەرەوە.</textarea>
+      
+      <label>🔗 لینکی دابەزاندن</label>
+      <input type="url" id="updateUrl" placeholder="https://example.com/app.apk" value="https://t.me/JACK_721_MOD">
+      
+      <label>📌 دوایین وەشان</label>
+      <input type="text" id="latestVersion" placeholder="1.2.0" value="1.0.1">
+      
+      <label>🔘 دەقی دوگمە</label>
+      <input type="text" id="updateButtonText" value="نوێکردنەوە">
+      
+      <button type="submit">🚀 ناردنی نوێکردنەوە</button>
+    </form>
+    <div class="status" id="status"></div>
+  </div>
+
+  <script>
+    // 📌 ئەم دوو نرخە بگۆڕە بە زانیارییەکانی خۆت
+    const DATABASE_URL = 'https://dialog-jack-default-rtdb.firebaseio.com';
+    const DATABASE_SECRET = 'ThimoY3blFCVf8oc5T5p63XsR9baJqGmN8X1cCpu';
+
+    const form = document.getElementById('updateForm');
+    const statusDiv = document.getElementById('status');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      statusDiv.textContent = '⏳ چاوەڕێ بکە...';
+      statusDiv.style.color = '#8E8E93';
+      
+      // کۆکردنەوەی داتا لە فۆرمەکەوە
+      const data = {
+        title: document.getElementById('title').value,
+        message: document.getElementById('message').value,
+        update_url: document.getElementById('updateUrl').value,
+        latest_version: document.getElementById('latestVersion').value,
+        update_button_text: document.getElementById('updateButtonText').value,
+        cancel_button_text: "Cancel",
+        force_update: false
+      };
+
+      // دروستکردنی لینکی تەواو بە نهێنییەکەوە
+      const fullUrl = `${DATABASE_URL}/update_config.json?auth=${DATABASE_SECRET}`;
+
+      try {
+        const response = await fetch(fullUrl, {
+          method: 'PUT',
+          body: JSON.stringify(data),
+          headers: { 'Content-Type': 'application/json' }
+        });
+
+        if (response.ok) {
+          statusDiv.textContent = '✅ بە سەرکەوتوویی پاشەکەوت کرا!';
+          statusDiv.style.color = '#34C759';
+        } else {
+          const errorText = await response.text();
+          statusDiv.textContent = `❌ هەڵەیەک ڕوویدا (${response.status}): ${errorText}`;
+          statusDiv.style.color = '#FF3B30';
+        }
+      } catch (error) {
+        statusDiv.textContent = '❌ هەڵەی تۆڕ یان پەیوەندی: ' + error.message;
+        statusDiv.style.color = '#FF3B30';
+      }
+    });
+  </script>
+</body>
+</html>
