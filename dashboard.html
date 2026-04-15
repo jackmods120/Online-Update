@@ -21,11 +21,13 @@
     <h2>🔗 دروستکەری لینکی نوێکردنەوە</h2>
     <p style="color: #8E8E93; text-align: center;">فۆڕمەکە پڕ بکەرەوە بۆ وەرگرتنی لینکی Raw</p>
 
-    <!-- بەشی ناسنامە -->
+    <!-- 📌 خانەی نهێنی بەڕێوەبەر (ADMIN_SECRET) -->
+    <label>🔐 نهێنی بەڕێوەبەر (Admin Secret)</label>
+    <input type="password" id="adminSecret" placeholder="وشەی نهێنی" required>
+
     <label>🆔 ناسنامەی تایبەت (ID)</label>
     <input type="text" id="updateId" placeholder="JACK_MOD" value="JACK_MOD" required>
     
-    <!-- بەشی ڕێکخستنەکان -->
     <label>📱 ناونیشان</label>
     <input type="text" id="title" value="📢 وەشانی نوێ بەردەستە">
     <label>📝 پەیام</label>
@@ -51,14 +53,16 @@
   </div>
 
   <script>
-    // 📌 ئەم نهێنییە تایبەتە بە خۆت و لە Vercel Environment Variable دادەنرێت
-    const ADMIN_SECRET = 'YOUR_SECRET_PASSWORD'; // دەبێت هەمان ئەو نرخە بێت کە لە Vercel دادەنێیت
-
     window.generateRawLink = async function() {
+      const adminSecret = document.getElementById('adminSecret').value.trim();
       const id = document.getElementById('updateId').value.trim();
       const statusDiv = document.getElementById('status');
       const resultDiv = document.getElementById('result');
       
+      if (!adminSecret) {
+        statusDiv.textContent = '❌ تکایە نهێنی بەڕێوەبەر بنووسە';
+        return;
+      }
       if (!id) {
         statusDiv.textContent = '❌ تکایە ناسنامە بنووسە';
         return;
@@ -75,13 +79,14 @@
       };
 
       statusDiv.textContent = '⏳ چاوەڕێ بکە...';
+      statusDiv.style.color = '#8E8E93';
       
       try {
         const response = await fetch('/api/update', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${ADMIN_SECRET}`
+            'Authorization': `Bearer ${adminSecret}`
           },
           body: JSON.stringify({ id, config })
         });
