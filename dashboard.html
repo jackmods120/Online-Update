@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ckb" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>داشبۆرد | جاک ئەپدەیت</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #000; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 16px; }
+    .panel { background: #1C1C1E; padding: 24px; border-radius: 14px; width: 100%; max-width: 500px; }
+    h2, h3 { color: #fff; }
+    label { color: #8E8E93; font-size: 14px; display: block; margin-bottom: 4px; }
+    input, textarea { width: 100%; padding: 12px; margin-bottom: 16px; background: #2C2C2E; border: none; border-radius: 8px; color: #fff; }
+    button { width: 100%; padding: 14px; background: #0A84FF; color: #fff; border: none; border-radius: 10px; font-size: 17px; font-weight: bold; cursor: pointer; margin-top: 16px; }
+    .logout { background: #3A3A3C; margin-top: 8px; }
+    .status { text-align: center; margin-top: 16px; }
+    hr { border-color: #3A3A3C; margin: 20px 0; }
+  </style>
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+    import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+    // 📌 ڕێکخستنی نوێکراوی Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyC0_fw0HIADvNIiDQyy6lsY7XsIABk0se8",
+      authDomain: "dialog-jack.firebaseapp.com",
+      databaseURL: "https://dialog-jack-default-rtdb.firebaseio.com",
+      projectId: "dialog-jack",
+      storageBucket: "dialog-jack.firebasestorage.app",
+      messagingSenderId: "127556343331",
+      appId: "1:127556343331:web:308985974ac23e52924396",
+      measurementId: "G-N8TQGS80TY"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getDatabase(app);
+
+    let currentUser = null;
+
+    onAuthStateChanged(auth, (user) => {
+      if (!user) {
+        window.location.href = '/index.html';
+      } else {
+        currentUser = user;
+        document.getElementById('userEmail').textContent = user.email;
+        loadUserConfig();
+      }
+    });
+
+    window.logout = function() {
+      signOut(auth).then(() => window.location.href = '/index.html');
+    };
+
+    async function loadUserConfig() {
+      const dbRef = ref(db, `users/${currentUser.uid}/config`);
+      const snapshot = await get(dbRef);
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        document.getElementById('dbUrl').value = data.dbUrl || '';
+        document.getElementById('dbSecret').value = data.dbSecret || '';
+      }
+    }
+
+    window.saveDatabaseConfig = async function() {
+      const dbUrl = document.getElementById('dbUrl').value.trim();
+      const dbSecret = document.getElementById('dbSecret').value.trim();
+      const status = document.getElementById('configStatus');
+      
+      if (!dbUrl || !dbSecret) {
+        status.textContent = '❌ تکایە هەردوو خانە پڕ بکەرەوە';
+        return;
+      }
+
+      try {
+        await set(ref(db, `users/${currentUser.uid}/config`), { dbUrl, dbSecret });
+        status.textContent = '✅ زانیارییەکان پاشەکەوت کران';
+        status.style.color = '#34C759';
+      } catch (e) {
+        status.textContent = '❌ هەڵە: ' + e.message;
+        status.style.color = '#FF3B30';
+      }
+    };
+
+    window.sendUpdate = async function() {
+      const dbUrl = document.getElementById('dbUrl').value.trim();
+      const dbSecret = document.getElementById('dbSecret').value.trim();
+      const status = document.getElementById('updateStatus');
+      
+      if (!dbUrl || !dbSecret) {
+        status.textContent = '❌ سەرەتا زانیارییەکانی بنکەدراوە تۆمار بکە';
+        return;
+      }
+
+      const data = {
+        title: document.getElementById('title').value,
+        message: document.getElementById('message').value,
+        update_url: document.getElementById('updateUrl').value,
+        latest_version: document.getElementById('latestVersion').value,
+        update_button_text: document.getElementById('updateButtonText').value,
+        cancel_button_text: "Cancel",
+        force_update: false
+      };
+
+      status.textContent = '⏳ چاوەڕێ بکە...';
+      const cleanDbUrl = dbUrl.replace(/\/$/, '');
+      const fullUrl = `${cleanDbUrl}/update_config.json?auth=${dbSecret}`;
+
+      try {
+        const res = await fetch(fullUrl, { method: 'PUT', body: JSON.stringify(data), headers: { 'Content-Type': 'application/json' } });
+        if (res.ok) {
+          status.textContent = '✅ بە سەرکەوتوویی پاشەکەوت کرا!';
+          status.style.color = '#34C759';
+        } else {
+          status.textContent = '❌ هەڵە: ' + res.status;
+          status.style.color = '#FF3B30';
+        }
+      } catch (e) {
+        status.textContent = '❌ هەڵەی تۆڕ: ' + e.message;
+        status.style.color = '#FF3B30';
+      }
+    };
+  </script>
+</head>
+<body>
+  <div class="panel">
+    <h2>📱 داشبۆردی جاک ئەپدەیت</h2>
+    <p style="color: #8E8E93;">بەخێربێیت، <span id="userEmail"></span></p>
+    <button class="logout" onclick="logout()">🚪 چوونەدەرەوە</button>
+
+    <hr>
+    <h3>⚙️ ڕێکخستنی بنکەدراوەکەت</h3>
+    <label>🔗 لینکی بنکەدراوە (Database URL)</label>
+    <input type="url" id="dbUrl" placeholder="https://YOUR-PROJECT.firebaseio.com">
+    <label>🔐 نهێنی بنکەدراوە (Database Secret)</label>
+    <input type="password" id="dbSecret" placeholder="وشەی نهێنی...">
+    <button onclick="saveDatabaseConfig()">💾 پاشەکەوتکردنی ڕێکخستنەکان</button>
+    <div id="configStatus" class="status" style="color: #8E8E93;"></div>
+
+    <hr>
+    <h3>📢 ناردنی نوێکردنەوە</h3>
+    <label>📱 ناونیشان</label>
+    <input type="text" id="title" value="📢 وەشانی نوێ بەردەستە">
+    <label>📝 پەیام</label>
+    <textarea id="message">وەشانی نوێ بەردەستە. تکایە ئەپەکەت نوێ بکەرەوە.</textarea>
+    <label>🔗 لینکی دابەزاندن</label>
+    <input type="url" id="updateUrl" value="https://t.me/">
+    <label>📌 دوایین وەشان</label>
+    <input type="text" id="latestVersion" value="1.0.1">
+    <label>🔘 دەقی دوگمە</label>
+    <input type="text" id="updateButtonText" value="نوێکردنەوە">
+    <button onclick="sendUpdate()">🚀 ناردنی نوێکردنەوە</button>
+    <div id="updateStatus" class="status"></div>
+  </div>
+</body>
+</html>
